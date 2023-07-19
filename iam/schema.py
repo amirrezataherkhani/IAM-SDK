@@ -16,7 +16,7 @@ class Security:
 
 
 class RealmAccess(BaseModel):
-    roles: Optional[list[str]]
+    roles: Optional[list[str]] = Field(..., default_factory=list)
 
 
 class TokenBasePayload(BaseModel):
@@ -26,7 +26,7 @@ class TokenBasePayload(BaseModel):
     azp: str
 
     allowed_origins: Optional[list[str]] = Field(..., alias="allowed-origins")
-    realm_access: Optional[RealmAccess] = RealmAccess()
+    realm_access: Optional[RealmAccess] = Field(..., default_factory=RealmAccess)
 
 
 class UserAttributes(TokenBasePayload):
