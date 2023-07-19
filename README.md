@@ -28,20 +28,19 @@ If your are fastapi you should use this example.
 
 from fastapi import APIRouter
 from typing import Annotated
-from iam.schema import User
+from iam.schema import TokenPayload, Security
 from iam.validation import get_user
-from fastapi import  FastAPI, Security
+from fastapi import  FastAPI
 
 
 router = APIRouter()
 
 @router.put('/profile/update')
 async def update_user_profile(
-        user: Annotated[User,Security(get_user, scopes=["profile:update"])]
+        user: Annotated[TokenPayload,Security(get_user, scopes=["profile:update"], roles = ['user'])]
 ):
     // do something 
 
     pass
-
 
 ```
