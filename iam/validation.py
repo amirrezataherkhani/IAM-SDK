@@ -1,15 +1,15 @@
-from jose import jwt
+from typing import Annotated, Union
+from jose import jwt, JWTError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from iam.schema import JWTBody, User
-from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (
     OAuth2PasswordBearer,
     SecurityScopes,
 )
-from jose import jwt
-
+from pydantic import ValidationError
+from iam.exceptions import UnauthorizeException
+from iam.schema import TokenPayload
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
@@ -48,8 +48,8 @@ class JWTVerify:
             )
         return public_key
 
-    def get_body(self, token: str) -> JWTBody:
-        return JWTBody(
+    def get_body(self, token: str) -> TokenPayload:
+        return TokenPayload(
             **jwt.decode(
                 token,
                 self.__public_key,
@@ -68,32 +68,57 @@ class JWTVerify:
 
 def get_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    security_scopes: SecurityScopes = SecurityScopes([]),
-) -> User:
-    if security_scopes.scopes:
+    security_scopes: Union[SecurityScopes, list[str], None] = None,
+) -> TokenPayload:
+    """
+    Authorize scopes and returns token payload
+
+    Parameters
+    ----------
+    token : str
+        The incoming token without 'bearer'.
+
+    security_scopes : Union[SecurityScopes, list[str], None]
+        The list of scopes
+
+    Returns
+    -------
+    TokenPayload
+        include all data in the token body.
+    """
+    required_scopes = []
+    if isinstance(security_scopes, SecurityScopes):
+        required_scopes = security_scopes.scopes
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
+
+    elif isinstance(security_scopes, list):
+        required_scopes = security_scopes
+        authenticate_value = f'Bearer scope="{" ".join(security_scopes)}"'
+
+    elif not security_scopes:
         authenticate_value = "Bearer"
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+
+    credentials_exception = UnauthorizeException(
         headers={"WWW-Authenticate": authenticate_value},
     )
-    # try:
-    payload = jwt.get_unverified_claims(token)
-    username: str = payload.get("sub")
-    if username is None:
-        raise credentials_exception
-    token_scopes: list[str] = payload.get("scope", "").split(" ")
-    token_data = JWTBody(**payload, scopes=token_scopes, id=username)
-    # except (JWTError, ValidationError):
-    #     raise credentials_exception
 
-    for scope in security_scopes.scopes:
+    try:
+        payload = jwt.get_unverified_claims(token)
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_scopes: list[str] = payload.get("scope", "").split(" ")
+        token_data: TokenPayload = TokenPayload(
+            **payload, scopes=token_scopes, id=username
+        )
+    except (JWTError, ValidationError):
+        raise credentials_exception
+
+    for scope in required_scopes:
         if scope not in token_data.scopes:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
-    return User(**token_data.dict())
+    return token_data

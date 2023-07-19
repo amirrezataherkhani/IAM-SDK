@@ -1,17 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
+from typing import Optional
 
 
-class User(BaseModel):
-    id: UUID
-    given_name: str
-    email_verified: bool
-    preferred_username: str
-    given_name: str
-    family_name: str
-    email: str
-    name: str
+class RealmAccess(BaseModel):
+    roles: Optional[list[str]]
 
 
-class JWTBody(User):
+class TokenBasePayload(BaseModel):
+    iat: int
+    exp: int
+    sub: str
+    azp: str
+
+    allowed_origins: Optional[list[str]] = Field(..., alias="allowed-origins")
+    realm_access: Optional[RealmAccess]
+
+
+class UserAttributes(TokenBasePayload):
+    id: Optional[UUID]
+    given_name: Optional[str]
+    email_verified: Optional[bool]
+    preferred_username: Optional[str]
+    given_name: Optional[str]
+    family_name: Optional[str]
+    email: Optional[str]
+    name: Optional[str]
     scopes: list[str]
+
+
+class TokenPayload(UserAttributes):
+    ...
