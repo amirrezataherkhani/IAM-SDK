@@ -1,7 +1,7 @@
 IAM is a proprietary package made by VisaPick group to enterprice purposes.
 
 ## Installation
-+ Just run ``` pip install git+https://github.com/Visapick-Team/IAM-SDK```
++ Just run ``` pip install git+https://github.com/Visapick-Team/IAM-SDK@beta0```
 
 ## Token Validation
 
