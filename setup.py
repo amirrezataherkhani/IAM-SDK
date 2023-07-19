@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="iam",
-    version="0.0.9",
+    version="0.0.10",
     author="VisaPick Group",
     author_email="Visapick.it@gmail.com",
     description="IAM package",
@@ -20,7 +20,8 @@ setuptools.setup(
         "python-jose",
         "cryptography",
         "passlib",
-        "pydantic",
+        "fastapi" "pydantic",
+        "djangorestframework",
     ],
     packages=["iam"],
     classifiers=[
