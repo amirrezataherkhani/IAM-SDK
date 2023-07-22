@@ -35,7 +35,7 @@ router = APIRouter()
 
 @router.put('/profile/update')
 async def update_user_profile(
-        user: TokenPayload = Depends(Authorize, scopes=["profile:update"], roles = ['user'] )
+    user: TokenPayload = Depends(Authorize(roles=['admin'], scopes=['profile:view']))
 ):
     // do something 
 
