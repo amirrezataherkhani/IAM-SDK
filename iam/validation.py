@@ -81,7 +81,7 @@ def get_user(
     Parameters
     ----------
     token : str
-        The incoming token without 'bearer'.
+        The incoming token with 'bearer'.
 
     security_scopes : Union[SecurityScopes, list[str], None]
         The list of scopes
