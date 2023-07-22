@@ -2,7 +2,7 @@ from typing import Annotated, Union, List, Optional
 from jose import jwt, JWTError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 from iam.exceptions import UnauthorizeException
@@ -63,6 +63,13 @@ class JWTVerify:
         return True
 
 
+authenticate_value = f"Bearer "
+
+credentials_exception = UnauthorizeException(
+    headers={"WWW-Authenticate": authenticate_value},
+)
+
+
 def get_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     scopes: list[str] = [],
@@ -84,43 +91,42 @@ def get_user(
     TokenPayload
         include all data in the token body.
     """
-    authenticate_value = f"Bearer "
-
-    if scopes:
-        authenticate_value += f'scope="{"".join(scopes)}"'
-
-    if roles:
-        authenticate_value += f'roles="{"".join(roles)}"'
-
-    credentials_exception = UnauthorizeException(
-        headers={"WWW-Authenticate": authenticate_value},
-    )
 
     try:
         payload = jwt.get_unverified_claims(token)
         username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
         token_scopes: list[str] = payload.get("scope", "").split(" ")
         token_data: TokenPayload = TokenPayload(
             **payload, scopes=token_scopes, id=username
         )
     except (JWTError, ValidationError):
-        raise credentials_exception
+        raise UnauthorizeException(
+            headers={
+                "WWW-Authenticate": f'Bearer scope="{"".join(scopes)}" roles="{"".join(roles)}"'
+            }
+        )
 
-    for role in roles:
-        if role not in token_data.realm_access.roles:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
-
-    for scope in scopes:
-        if scope not in token_data.scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
     return token_data
+
+
+class Authorize:
+    def __init__(self, roles: list[str] = [], scopes: list[str] = []) -> None:
+        self.roles = roles
+        self.scopes = scopes
+
+    def __call__(self, user: TokenPayload = Depends(get_user)) -> TokenPayload:
+        credentials_exception = UnauthorizeException(
+            headers={
+                "WWW-Authenticate": f'Bearer scope="{"".join(self.scopes)}" roles="{"".join(self.roles)}"'
+            },
+        )
+
+        for role in self.roles:
+            if role not in user.realm_access.roles:
+                raise credentials_exception
+
+        for scope in self.scopes:
+            if scope not in user.scopes:
+                raise credentials_exception
+
+        return user

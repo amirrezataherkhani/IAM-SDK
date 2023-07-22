@@ -21,23 +21,21 @@ else:
 ```
 
 
-## Token Authorizing using scopes
+## Token Authorizing
 
 If your are fastapi you should use this example.
 ```python
 
 from fastapi import APIRouter
-from typing import Annotated
-from iam.schema import TokenPayload, Security
-from iam.validation import get_user
-from fastapi import  FastAPI
+from iam.schema import TokenPayload
+from iam.validation import Authorize
 
 
 router = APIRouter()
 
 @router.put('/profile/update')
 async def update_user_profile(
-        user: Annotated[TokenPayload,Security(get_user, scopes=["profile:update"], roles = ['user'])]
+        user: TokenPayload = Depends(Authorize, scopes=["profile:update"], roles = ['user'] )
 ):
     // do something 
 
