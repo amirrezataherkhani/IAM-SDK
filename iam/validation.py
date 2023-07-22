@@ -91,6 +91,7 @@ def get_user(
     TokenPayload
         include all data in the token body.
     """
+    token = token[7:]
 
     try:
         payload = jwt.get_unverified_claims(token)
