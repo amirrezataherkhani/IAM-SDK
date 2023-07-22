@@ -3,20 +3,8 @@ from uuid import UUID
 from typing import Optional, List
 
 
-class Security:
-    def __init__(
-        self,
-        scopes: Optional[List[str]] = None,
-        roles: Optional[List[str]] = None,
-    ):
-        self.scopes = scopes or []
-        self.roles = roles or []
-        self.scope_str = " ".join(self.scopes)
-        self.role_str = " ".join(self.roles)
-
-
 class RealmAccess(BaseModel):
-    roles: Optional[list[str]] = Field(..., default_factory=list)
+    roles: Optional[list[str]] = []
 
 
 class TokenBasePayload(BaseModel):
@@ -26,7 +14,7 @@ class TokenBasePayload(BaseModel):
     azp: str
 
     allowed_origins: Optional[list[str]] = Field(..., alias="allowed-origins")
-    realm_access: Optional[RealmAccess] = Field(..., default_factory=RealmAccess)
+    realm_access: RealmAccess = RealmAccess(roles=[])
 
 
 class UserAttributes(TokenBasePayload):

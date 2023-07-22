@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 from iam.exceptions import UnauthorizeException
-from iam.schema import TokenPayload, Security
+from iam.schema import TokenPayload
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
@@ -65,7 +65,8 @@ class JWTVerify:
 
 def get_user(
     token: Annotated[str, Depends(oauth2_scheme)],
-    security: Union[Security, None] = None,
+    scopes: list[str] = [],
+    roles: list[str] = [],
 ) -> TokenPayload:
     """
     Authorize scopes and returns token payload
@@ -83,16 +84,14 @@ def get_user(
     TokenPayload
         include all data in the token body.
     """
+    authenticate_value = f"Bearer "
 
-    if isinstance(security, Security):
-        authenticate_value = f'Bearer scope="{security.scope_str}"'
+    if scopes:
+        authenticate_value += f'scope="{"".join(scopes)}"'
 
-    elif not security:
-        security = Security()
-        authenticate_value = "Bearer"
-    else:
-        raise Exception("invalid 'security' type.")
-    
+    if roles:
+        authenticate_value += f'roles="{"".join(roles)}"'
+
     credentials_exception = UnauthorizeException(
         headers={"WWW-Authenticate": authenticate_value},
     )
@@ -109,7 +108,7 @@ def get_user(
     except (JWTError, ValidationError):
         raise credentials_exception
 
-    for role in security.roles:
+    for role in roles:
         if role not in token_data.realm_access.roles:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -117,7 +116,7 @@ def get_user(
                 headers={"WWW-Authenticate": authenticate_value},
             )
 
-    for scope in security.scopes:
+    for scope in scopes:
         if scope not in token_data.scopes:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
