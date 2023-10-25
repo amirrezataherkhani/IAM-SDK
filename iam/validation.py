@@ -5,8 +5,11 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
-from iam.exceptions import UnauthorizeException
+from iam.exceptions import UnauthorizeException, TokenException
 from iam.schema import TokenPayload
+from logging import Logger
+
+log = Logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
@@ -58,7 +61,8 @@ class JWTVerify:
     def verify(self, token: str) -> bool:
         try:
             self.get_body(token)
-        except:
+        except Exception as e:
+            log.critical(e)
             return False
         return True
 
@@ -91,6 +95,13 @@ def get_user(
     TokenPayload
         include all data in the token body.
     """
+    if not token or (token and token.lower().startswith("bearer")):
+        raise TokenException(
+            headers={
+                "WWW-Authenticate": f'Bearer scope="{" ".join(scopes)}" roles="{" ".join(roles)}"'
+            }
+        )
+
     try:
         payload = jwt.get_unverified_claims(token)
         username: str = payload.get("sub")
@@ -120,12 +131,12 @@ class Authorize:
             },
         )
 
-        for role in self.roles:
-            if role not in user.realm_access.roles:
+        for scope in self.scopes:
+            if scope not in user.realm_access.roles:
                 raise credentials_exception
 
-        for scope in self.scopes:
-            if scope not in user.scopes:
+        for group in self.roles:
+            if group not in user.groups:
                 raise credentials_exception
 
         return user

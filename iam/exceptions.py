@@ -47,3 +47,14 @@ class AccessDeniedException(UnionException):
         headers: dict | None = None,
     ):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
+
+
+
+class TokenException(UnionException):
+    def __init__(
+        self,
+        status_code: int | None = 400,
+        detail: str | None = "Invalid token.",
+        headers: dict | None = None,
+    ):
+        super().__init__(status_code=status_code, detail=detail, headers=headers)
