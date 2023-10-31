@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
-from iam.exceptions import UnauthorizeException, TokenException
+from iam.exceptions import UnauthorizeException, TokenException, AccessDeniedException
 from iam.schema import TokenPayload
 from logging import Logger
 
@@ -74,33 +74,22 @@ credentials_exception = UnauthorizeException(
 )
 
 
-def get_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    scopes: list[str] = [],
-    roles: list[str] = [],
-) -> TokenPayload:
+def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> TokenPayload:
     """
-    Authorize scopes and returns token payload
+    Retrieves the user information from the provided token.
 
-    Parameters
-    ----------
-    token : str
-        The incoming token with 'bearer'.
+    Args:
+        token (Annotated[str, Depends(oauth2_scheme)]): The token without 'bearer' used to authenticate the user.
 
-    security_scopes : Union[SecurityScopes, list[str], None]
-        The list of scopes
+    Returns:
+        TokenPayload: The payload containing the user information.
 
-    Returns
-    -------
-    TokenPayload
-        include all data in the token body.
+    Raises:
+        TokenException: If the token is missing or does not start with "bearer".
+        UnauthorizeException: If there is an error during token verification or validation.
     """
-    if not token or (token and token.lower().startswith("bearer")):
-        raise TokenException(
-            headers={
-                "WWW-Authenticate": f'Bearer scope="{" ".join(scopes)}" roles="{" ".join(roles)}"'
-            }
-        )
+    if not token or token.lower().startswith("bearer"):
+        raise TokenException
 
     try:
         payload = jwt.get_unverified_claims(token)
@@ -109,12 +98,9 @@ def get_user(
         token_data: TokenPayload = TokenPayload(
             **payload, scopes=token_scopes, id=username
         )
-    except (JWTError, ValidationError):
-        raise UnauthorizeException(
-            headers={
-                "WWW-Authenticate": f'Bearer scope="{"".join(scopes)}" roles="{"".join(roles)}"'
-            }
-        )
+    except (JWTError, ValidationError) as e:
+        log.critical(e)
+        raise UnauthorizeException
 
     return token_data
 
@@ -124,19 +110,26 @@ class Authorize:
         self.roles = roles
         self.scopes = scopes
 
-    def __call__(self, user: TokenPayload = Depends(get_user)) -> TokenPayload:
-        credentials_exception = UnauthorizeException(
-            headers={
-                "WWW-Authenticate": f'Bearer scope="{"".join(self.scopes)}" roles="{"".join(self.roles)}"'
-            },
-        )
+    def authorize(self, user: TokenPayload) -> TokenPayload:
+        """
+        Authorizes the user by checking if the user has the required scopes and roles.
 
-        for scope in self.scopes:
-            if scope not in user.realm_access.roles:
-                raise credentials_exception
+        Args:
+            user (TokenPayload): The token payload of the user.
 
-        for group in self.roles:
-            if group not in user.groups:
-                raise credentials_exception
+        Returns:
+            TokenPayload: The authorized token payload of the user.
+
+        Raises:
+            AccessDeniedException: If the user does not have the required scopes or roles.
+        """
+        if any(scope not in user.realm_access.roles for scope in self.scopes):
+            raise AccessDeniedException
+
+        if any(group not in user.groups for group in self.roles):
+            raise AccessDeniedException
 
         return user
+
+    def __call__(self, user: TokenPayload = Depends(get_user)) -> TokenPayload:
+        return self.authorize(user)
