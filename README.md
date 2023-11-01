@@ -23,27 +23,48 @@ def function(
 
 ## Django Example
 
-### ModelViewSet
+### ModelViewSet or GenericViewSet
 
 ```python
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import permissions
+from iam.permissions import AutoScopePermission
 
-class IsUser(permissions.BasePermission):
 
-    def has_permission(self, request, view):
-
-        user = get_user_from_token(request=request)
-        authorize = Authorize(roles=roles)
-        authorize(user=user)
-
-        return True
-
+class SampleScopePermission(AutoScopePermission):
+    _service_name = "service"
 
 class MyModelViewSet(ModelViewSet):
-    permission_classes = [IsUser]
+    permission_classes = [SampleScopePermission]
     queryset = MyModel.objects.all()
     serializer_class = MyModelSerializer
+    object_name = "sample"
+```
+This will validate below scopes for all actions in the MyModelViewSet.
+```
+service:sample:get
+service:sample:list
+service:sample:create
+service:sample:update
+service:sample:delete
+```
+if you are using custom actions, the permission class can handle your action and will check like this
+```
+service:sample:custom_action
+```
+
+
+
+### Function-Base APIView
+
+```python
+from rest_framework.decorators import api_view
+from iam.permissions import scope_permission
+
+
+@api_view(['DELETE'])
+@scope_permission(":profile:delete")
+def SampleFunctionAPIView(request):
+    return Response({"message": "Herkese selam"})
 ```
 
 # Contributors
