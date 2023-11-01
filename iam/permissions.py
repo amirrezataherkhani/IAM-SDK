@@ -1,12 +1,9 @@
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
+from typing import Any
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import BasePermission
 from iam.validation import get_user, Authorize
 from iam.schema import TokenPayload
 import logging
-
 
 logger = logging.Logger(__name__)
 
@@ -74,7 +71,6 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :return: The scope of the object.
         :rtype: object
         """
-        logger.critical(self._scope)
         assert self._scope is not None, f"{self._scope} Scope is not set."
         return self._scope
 
@@ -216,7 +212,19 @@ class AutoScopePermission(BaseAutoScopePermission):
         self.prepare_scope(view=view)
         scope = self.scope
         user = self.get_user(request=request)
-        logger.critical(scope)
 
         self.authorize(user, scopes=[scope], roles=[])
         return True
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        return self
+
+
+def scope_permission(scope: str):
+    def decorator(func):
+        permission_class = AutoScopePermission()
+        permission_class.set_scope(scope=scope)
+        func.permission_classes = [permission_class]
+        return func
+
+    return decorator
