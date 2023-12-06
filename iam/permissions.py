@@ -1,5 +1,6 @@
 from typing import Any
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from iam.validation import get_user, Authorize
 from iam.schema import TokenPayload
@@ -24,8 +25,8 @@ class AuthorizationBasePermission(BasePermission):
         """
         token: str | None = request.headers.get("Authorization", None)
         token: str | None = token or request.COOKIES.get("Authorization", None)
-
-        assert token is not None, f"{token} Token is not set."
+        if not token:
+            raise NotAuthenticated()
         if token.lower().startswith("bearer"):
             token = token[7:]
 
