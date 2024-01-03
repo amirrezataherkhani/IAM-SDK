@@ -2,6 +2,7 @@ from typing import Any
 
 from django.http import HttpRequest
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 from iam.validation import get_user, Authorize
 from iam.schema import TokenPayload
@@ -29,6 +30,7 @@ class AuthorizationBasePermission(BasePermission):
 
         if not token:
             raise Exception("Token is missing")
+
         if token.lower().startswith("bearer"):
             token = token[7:]
 
@@ -250,27 +252,3 @@ class IsAuthorizedUser(BasePermission):
         user = get_user_from_request(request)
         return user and 'user' in user.groups
 
-# class IsInUserGroup(BasePermission):
-#     def has_permission(self, request, view):
-#         user = get_user_from_request(request)
-#         # list_role_permissions = view.list_role_permissions
-#         # list_scope_permissions = view.list_scope_permissions
-#         # scope_based_permissions_passed = False
-#         # role_based_permissions_passed = False
-#         #
-#         return 'user' in user.groups
-#         # for role_permission_string in list_role_permissions:
-#         #     if role_permission_string in user.groups:
-#         #         role_based_permissions_passed = True
-#         # for scope_permission_string in list_scope_permissions:
-#         #     if scope_permission_string in user.realm_access.roles:
-#         #         scope_based_permissions_passed = True
-#         #
-#         # if list_role_permissions and list_scope_permissions:
-#         #     return role_based_permissions_passed and scope_based_permissions_passed
-#         # elif list_scope_permissions:
-#         #     return scope_based_permissions_passed
-#         # elif list_role_permissions:
-#         #     return role_based_permissions_passed
-#         # else:
-#         #     return True
