@@ -5,6 +5,8 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
+from rest_framework.views import APIView
+
 from iam.exceptions import UnauthorizeException, TokenException, AccessDeniedException
 from iam.schema import TokenPayload
 from logging import Logger
@@ -26,9 +28,9 @@ class JWTVerify:
     __alghorithm = "RS256"
 
     def __init__(
-        self,
-        public_key_file_address: str,
-        audience: str,
+            self,
+            public_key_file_address: str,
+            audience: str,
     ) -> None:
         self.set_audience(audience)
         self.set_public_key(public_key_file_address)
@@ -123,6 +125,7 @@ class Authorize:
         Raises:
             AccessDeniedException: If the user does not have the required scopes or roles.
         """
+
         if any(scope not in user.realm_access.roles for scope in self.scopes):
             raise AccessDeniedException
 
