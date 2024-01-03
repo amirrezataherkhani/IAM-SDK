@@ -1,4 +1,6 @@
 from typing import Any
+
+from django.http import HttpRequest
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import BasePermission
 from iam.validation import get_user, Authorize
@@ -25,7 +27,8 @@ class AuthorizationBasePermission(BasePermission):
         token: str | None = request.headers.get("Authorization", None)
         token: str | None = token or request.COOKIES.get("Authorization", None)
 
-        assert token is not None, f"{token} Token is not set."
+        if not token:
+            raise Exception("Token is missing")
         if token.lower().startswith("bearer"):
             token = token[7:]
 
@@ -71,7 +74,8 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :return: The scope of the object.
         :rtype: object
         """
-        assert self._scope is not None, f"{self._scope} Scope is not set."
+        if not self._scope:
+            raise Exception("Token is missing")
         return self._scope
 
     def set_scope(self, scope) -> None:
@@ -99,9 +103,9 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :return: The service name.
         :rtype: str
         """
-        assert (
-            self._service_name is not None
-        ), f"{self._service_name} Service name is not set."
+        if not self._service_name:
+            raise Exception("Service name is not set.")
+
         return self._service_name
 
     def set_service_name(self, service_name):
@@ -129,9 +133,8 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :return: A string representing the object name.
         :rtype: str
         """
-        assert (
-            self._object_name is not None
-        ), f"{self._object_name} Object name is not set."
+        if not self._service_name:
+            raise Exception("Object name is not set.")
         return self._object_name
 
     def set_object_name(self, object_name):
@@ -157,7 +160,8 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         Raises:
             AssertionError: If the `action` property is not set.
         """
-        assert self._action is not None, f"{self._action} Action is not set."
+        if not self._action:
+            raise Exception("Action is not set.")
         return self._action
 
     def set_action(self, action):
@@ -228,3 +232,45 @@ def scope_permission(scope: str):
         return func
 
     return decorator
+
+
+def get_user_from_request(request: HttpRequest) -> TokenPayload | None:
+    token = request.headers.get("Authorization", None)
+    if not token:
+        token = request.COOKIES.get("Authorization", None)
+    if not token:
+        return None
+    token = token[7:]
+    user: TokenPayload = get_user(token=token)
+    return user
+
+
+class IsAuthorizedUser(BasePermission):
+    def has_permission(self, request, view):
+        user = get_user_from_request(request)
+        return user and 'user' in user.groups
+
+# class IsInUserGroup(BasePermission):
+#     def has_permission(self, request, view):
+#         user = get_user_from_request(request)
+#         # list_role_permissions = view.list_role_permissions
+#         # list_scope_permissions = view.list_scope_permissions
+#         # scope_based_permissions_passed = False
+#         # role_based_permissions_passed = False
+#         #
+#         return 'user' in user.groups
+#         # for role_permission_string in list_role_permissions:
+#         #     if role_permission_string in user.groups:
+#         #         role_based_permissions_passed = True
+#         # for scope_permission_string in list_scope_permissions:
+#         #     if scope_permission_string in user.realm_access.roles:
+#         #         scope_based_permissions_passed = True
+#         #
+#         # if list_role_permissions and list_scope_permissions:
+#         #     return role_based_permissions_passed and scope_based_permissions_passed
+#         # elif list_scope_permissions:
+#         #     return scope_based_permissions_passed
+#         # elif list_role_permissions:
+#         #     return role_based_permissions_passed
+#         # else:
+#         #     return True

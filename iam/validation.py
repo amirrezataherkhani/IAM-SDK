@@ -5,6 +5,8 @@ from cryptography.hazmat.primitives import serialization
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
+from rest_framework.views import APIView
+
 from iam.exceptions import UnauthorizeException, TokenException, AccessDeniedException
 from iam.schema import TokenPayload
 from logging import Logger
@@ -26,9 +28,9 @@ class JWTVerify:
     __alghorithm = "RS256"
 
     def __init__(
-        self,
-        public_key_file_address: str,
-        audience: str,
+            self,
+            public_key_file_address: str,
+            audience: str,
     ) -> None:
         self.set_audience(audience)
         self.set_public_key(public_key_file_address)
@@ -123,6 +125,7 @@ class Authorize:
         Raises:
             AccessDeniedException: If the user does not have the required scopes or roles.
         """
+
         if any(scope not in user.realm_access.roles for scope in self.scopes):
             raise AccessDeniedException
 
@@ -133,3 +136,42 @@ class Authorize:
 
     def __call__(self, user: TokenPayload = Depends(get_user)) -> TokenPayload:
         return self.authorize(user)
+
+
+
+# class IamApiView(APIView):
+#     # list_role_permissions = []
+#     # list_scope_permissions = []
+#
+#     def initial(self, request, *args, **kwargs):
+#         """
+#         Runs anything that needs to occur prior to calling the method handler.
+#         """
+#         self.format_kwarg = self.get_format_suffix(**kwargs)
+#
+#         # Perform content negotiation and store the accepted info on the request
+#         neg = self.perform_content_negotiation(request)
+#         request.accepted_renderer, request.accepted_media_type = neg
+#
+#         # Determine the API version, if versioning is in use.
+#         version, scheme = self.determine_version(request, *args, **kwargs)
+#         request.version, request.versioning_scheme = version, scheme
+#
+#         # Ensure that the incoming request is permitted
+#         self.perform_authentication(request)
+#         self.check_permissions(request)
+#         # self.check_custom_permissions(request)
+#         self.check_throttles(request)
+
+    # def check_custom_permissions(self, request):
+    #     """
+    #     Check if the request should be permitted.
+    #     Raises an appropriate exception if the request is not permitted.
+    #     """
+    #     for permission in self.get_permissions():
+    #         if not permission.has_permission(request, self):
+    #             self.permission_denied(
+    #                 request,
+    #                 message=getattr(permission, 'message', None),
+    #                 code=getattr(permission, 'code', None)
+    #             )
