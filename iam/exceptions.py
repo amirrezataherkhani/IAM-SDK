@@ -6,11 +6,11 @@ import http
 
 class UnionException(APIException, HTTPException):
     def __init__(
-        self,
-        status_code: typing.Optional[int] = None,
-        detail: typing.Optional[str] = None,
-        code: typing.Optional[int] = None,
-        headers: typing.Optional[dict] = None,
+            self,
+            status_code: typing.Optional[int] = None,
+            detail: typing.Optional[str] = None,
+            code: typing.Optional[int] = None,
+            headers: typing.Optional[dict] = None,
     ):
         if not (status_code or code):
             raise Exception(f"status_code or code is required.")
@@ -32,29 +32,36 @@ class UnionException(APIException, HTTPException):
 
 class UnauthorizeException(UnionException):
     def __init__(
-        self,
-        status_code: int | None = 401,
-        detail: str | None = "Unauthorized.",
-        headers: dict | None = None,
+            self,
+            status_code: int | None = 401,
+            detail: str | None = "Unauthorized.",
+            headers: dict | None = None,
     ):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
+
 
 class AccessDeniedException(UnionException):
     def __init__(
-        self,
-        status_code: int | None = 403,
-        detail: str | None = "Access denied. You have not enough permissions.",
-        headers: dict | None = None,
+            self,
+            status_code: int | None = 403,
+            detail: str | None = "Access denied. You have not enough permissions.",
+            headers: dict | None = None,
     ):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
-
 
 
 class TokenException(UnionException):
     def __init__(
-        self,
-        status_code: int | None = 400,
-        detail: str | None = "Invalid token.",
-        headers: dict | None = None,
+            self,
+            status_code: int | None = 400,
+            detail: str | None = "Invalid token.",
+            headers: dict | None = None,
     ):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
+
+
+class MissingError(Exception):
+    def __init__(self, message="Token is missing", status_code=400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
