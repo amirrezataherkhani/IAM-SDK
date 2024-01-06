@@ -4,6 +4,8 @@ from django.http import HttpRequest
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
+
+from iam.exceptions import MissingValueError
 from iam.validation import get_user, Authorize
 from iam.schema import TokenPayload
 import logging
@@ -77,7 +79,7 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :rtype: object
         """
         if not self._scope:
-            raise Exception("Token is missing")
+            raise MissingValueError("Scope is not set", 403)
         return self._scope
 
     def set_scope(self, scope) -> None:
@@ -106,7 +108,7 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :rtype: str
         """
         if not self._service_name:
-            raise Exception("Service name is not set.")
+            raise MissingValueError("Service name is not set", 400)
 
         return self._service_name
 
@@ -136,7 +138,7 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :rtype: str
         """
         if not self._service_name:
-            raise Exception("Object name is not set.")
+            raise MissingValueError("Object name is not set", 400)
         return self._object_name
 
     def set_object_name(self, object_name):
@@ -163,7 +165,7 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
             AssertionError: If the `action` property is not set.
         """
         if not self._action:
-            raise Exception("Action is not set.")
+            raise MissingValueError("Action is not set", 400)
         return self._action
 
     def set_action(self, action):
