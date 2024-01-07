@@ -79,7 +79,7 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
         :rtype: object
         """
         if not self._scope:
-            raise MissingValueError("Token is not set", 401)
+            raise MissingValueError("Scope is not set", 403)
         return self._scope
 
     def set_scope(self, scope) -> None:
