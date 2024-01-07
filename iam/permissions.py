@@ -31,7 +31,7 @@ class AuthorizationBasePermission(BasePermission):
         token: str | None = token or request.COOKIES.get("Authorization", None)
 
         if not token:
-            raise Exception("Token is missing")
+            raise MissingValueError("Token is not set", 401)
 
         if token.lower().startswith("bearer"):
             token = token[7:]
