@@ -1,11 +1,10 @@
-from typing import Annotated, Union, List, Optional
+from typing import Annotated
 from jose import jwt, JWTError
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
-from rest_framework.views import APIView
 
 from iam.exceptions import UnauthorizeException, TokenException, AccessDeniedException
 from iam.schema import TokenPayload

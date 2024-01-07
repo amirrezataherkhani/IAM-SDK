@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from uuid import UUID
-from typing import Optional, List
+from typing import Optional
 
 
 class RealmAccess(BaseModel):
