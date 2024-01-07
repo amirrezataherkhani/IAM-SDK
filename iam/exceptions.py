@@ -60,8 +60,12 @@ class TokenException(UnionException):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
 
 
-class MissingValueError(Exception):
-    def __init__(self, message="Token is missing", status_code=401):
-        self.message = message
-        self.status_code = status_code
-        super().__init__(self.message)
+class MissingValueError(UnionException):
+    def __init__(
+            self,
+            status_code: typing.Optional[int] = None,
+            detail: typing.Optional[str] = None,
+            code: typing.Optional[int] = None,
+            headers: typing.Optional[dict] = None,
+    ):
+        super().__init__(status_code=status_code, code=code, detail=detail, headers=headers)
