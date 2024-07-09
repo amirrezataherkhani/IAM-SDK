@@ -202,17 +202,16 @@ class BaseAutoScopePermission(AuthorizationBasePermission):
 
 class AutoScopePermission(BaseAutoScopePermission):
     def prepare_scope(self, view) -> str:
-        if isinstance(view, GenericViewSet):
-            self.set_object_name(view.object_name)
-            self.set_action(view.action)
-            service_name = self.service_name
+        self.set_object_name(view.object_name)
+        self.set_action(view.action)
+        service_name = self.service_name
 
-            scope = self.generic_scope(
-                object_name=self.object_name,
-                action=self.action,
-                service_name=service_name,
-            )
-            self.set_scope(scope)
+        scope = self.generic_scope(
+            object_name=self.object_name,
+            action=self.action,
+            service_name=service_name,
+        )
+        self.set_scope(scope)
 
     def has_permission(self, request, view):
         self.prepare_scope(view=view)
